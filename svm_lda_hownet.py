@@ -1,21 +1,11 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn import datasets,linear_model
-from sklearn.model_selection  import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection  import cross_val_predict
-from sklearn import metrics
 from scipy.sparse import csr_matrix
 from sklearn import svm
-import os,re,time,logging,math
+import os,re,math
 import thulac
 from gensim import corpora,models
-from pprint import pprint
 #coding: utf-8
-import urllib.request
-import urllib.parse
-import json
 thu=thulac.thulac()
 #去除文本中指定字符chara
 def rm_char(text,chara='\u3000'):
@@ -206,6 +196,7 @@ def  getPerplexity(lda,XList):
     hlist=[item[0] for item in XList]
     return lda.bound(hlist)
 #训练LDA模型选择最优主题数量值
+topicnum=0
 def  get_lda_by_num_topics(train_set,test_set,dic,num=5,iternum=1000):
     Perplexity=[];
     genIdaModel(train_set,dic,num)
@@ -222,6 +213,7 @@ def  get_lda_by_num_topics(train_set,test_set,dic,num=5,iternum=1000):
     print(Perplexity)
     print('number of topics')
     print(num)
+    topicnum=num
     return lda
 train_set_ldaXList,test_set_ldaXList=train_test_sep(corpusXList,test_size=0.5)
 lda=get_lda_by_num_topics(train_set_ldaXList,test_set_ldaXList,dic)
@@ -239,8 +231,6 @@ def getPolrity(word):
         if word in item:
             return sendic[item][0],sendic[item][1]
     return 0.0,0.0
-intensity,polarity=getPolrity('最好')
-print('jixing'+str(intensity)+str(polarity))
 #获取dic中键值的情感倾向
 def getPolrityDic(dic={}):
     positive=0.0
@@ -259,6 +249,8 @@ def predictThemebow(dic,txtbow,model):
     themedic={}
     for topic in model_pred:
         for item in topic:
+            if item[0]>topicnum:
+                continue
             wordspair=model.get_topic_terms(item[0], topn=10)
             for worditem in wordspair:
                 if dic.get(worditem[0]) in themedic:
@@ -294,44 +286,4 @@ def pred_lda_sen_index(dic,ldaXList,model):
     
 #lda=loadIdaModel()
 pred_lda_sen_index(dic,test_set_ldaXList,lda)
-#print(pol)
-# 创建一个空的 DataFrame
-#df_empty = pd.DataFrame(columns=['id'])
-#for index in lda.show_topics(formatted=False,num_topics=5,num_words=10):
-#    print(index)
-#    ary=[]
-#    for i in index[1]:
-#        ary.append(i[0]+' '+str(i[1]))
-#    df_empty[index[0]]=ary
-#print(df_empty)
-#df_empty.to_csv('data/csvresult.csv')
-#predictTheme(dic,'你好，客服态度差，快递服务好',lda)
-#print(lda.print_topics(20))#打印前20个topic的词分布
-#print(lda.print_topic(20))#打印id为20的topic的词分布
-#corpus_lda = lda[corpus_tfidf] #每个文本对应的LDA向量，稀疏的，元素值是隶属与对应序数类的权重
 
-
-#划分数据测试集和训练级，
-#test_size指定划分百分比，
-#random_state固定为整数时每次划分结果相同
-
-#print('xtrain:'+str(X_train.shape)+' ytrain:'+str(y_train.shape)+'Xtest:'+str(X_test.shape)+'ytest:'+str(y_test.shape))
-#训练得到线性回归模型参数
-linreg=LinearRegression()
-linreg.fit(X_train,y_train)
-print(linreg.intercept_)
-print(linreg.coef_)
-#评估我们的模型的好坏程度，对于线性回归来说，
-#我们一般用均方差（Mean Squared Error, MSE）或
-#者均方根差(Root Mean Squared Error,
-#RMSE)在测试集上的表现来评价模型的好坏。
-y_pred=linreg.predict(X_test)
-print(metrics.mean_squared_error(y_test,y_pred))
-print(np.sqrt(metrics.mean_squared_error(y_test,y_pred)))
-predicted =cross_val_predict(linreg, X, y, cv=10)
-fig,ax=plt.subplots()
-ax.scatter(y, predicted)
-ax.plot([y.min(), y.max()], [y.min(), y.max()], 'k--', lw=4)
-ax.set_xlabel('Measured')
-ax.set_ylabel('Predicted')
-plt.show()
